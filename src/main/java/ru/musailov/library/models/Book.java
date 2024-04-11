@@ -5,7 +5,9 @@ import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +15,8 @@ import java.util.concurrent.TimeUnit;
 @Entity
 @Table(name = "book")
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Book {
     @Id
     @Column(name = "id")
@@ -50,5 +54,11 @@ public class Book {
         if (takenAt == null) return false;
         return TimeUnit.MILLISECONDS.
                 toDays((new Date().getTime()) - this.getTakenAt().getTime()) > 10;
+    }
+
+    public Book(String name, String author, int year) {
+        this.name = name;
+        this.author = author;
+        this.year = year;
     }
 }

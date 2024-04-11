@@ -41,4 +41,10 @@ public class Reader {
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<Book> books;
+
+    public Reader(String name, int birthYear, String email) {
+        this.fullName = name;
+        this.birthYear = birthYear;
+        this.email = email;
+    }
 }

@@ -1,10 +1,13 @@
 package ru.musailov.library.services;
 
+import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import ru.musailov.library.dto.LoginRequest;
 import ru.musailov.library.models.AuthenticationResponse;
+import ru.musailov.library.models.Role;
 import ru.musailov.library.models.Token;
 import ru.musailov.library.models.User;
 import ru.musailov.library.repositories.TokenRepository;
@@ -40,7 +43,7 @@ public class AuthenticationService {
 
         // check if user already exist. if exist than authenticate the user
         if(repository.findByUsername(request.getUsername()).isPresent()) {
-            return new AuthenticationResponse(null, "User already exist");
+            return new AuthenticationResponse(null, "Данный логин занят другим пользователем");
         }
 
         User user = new User();
@@ -50,7 +53,7 @@ public class AuthenticationService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
 
-        user.setRole(request.getRole());
+        user.setRole(Role.USER);
 
         user = repository.save(user);
 
@@ -62,7 +65,33 @@ public class AuthenticationService {
 
     }
 
-    public AuthenticationResponse authenticate(User request) {
+    public AuthenticationResponse registerAdmin(User request) {
+
+        // check if user already exist. if exist than authenticate the user
+        if(repository.findByUsername(request.getUsername()).isPresent()) {
+            return new AuthenticationResponse(null, "User already exist");
+        }
+
+        User user = new User();
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+
+        user.setRole(Role.ADMIN);
+
+        user = repository.save(user);
+
+        String jwt = jwtService.generateToken(user);
+
+        saveUserToken(jwt, user);
+
+        return new AuthenticationResponse(jwt, "Admin registration was successful", user.getRole());
+
+    }
+
+    public AuthenticationResponse authenticate(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
@@ -85,11 +114,11 @@ public class AuthenticationService {
             return;
         }
 
-        validTokens.forEach(t-> {
-            t.setLoggedOut(true);
-        });
-
-        tokenRepository.saveAll(validTokens);
+//        validTokens.forEach(t-> {
+//            t.setLoggedOut(true);
+//        });
+        tokenRepository.deleteAll(validTokens);
+//        tokenRepository.saveAll(validTokens);
     }
     private void saveUserToken(String jwt, User user) {
         Token token = new Token();

@@ -1,26 +1,20 @@
 package ru.musailov.library.controllers;
 
 import jakarta.validation.Valid;
-import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.propertyeditors.ReaderEditor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import ru.musailov.library.dto.ResponseDto;
+import ru.musailov.library.dto.ReaderDTO;
 import ru.musailov.library.exceptions.NotFoundException;
-import ru.musailov.library.models.Book;
 import ru.musailov.library.models.Reader;
 import ru.musailov.library.services.ReaderService;
 import ru.musailov.library.util.ReaderValidator;
 
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/readers")
@@ -28,10 +22,12 @@ public class ReaderController {
 
 
     private final ReaderService readerService;
+    private final ReaderValidator readerValidator;
 
     @Autowired
-    public ReaderController(ReaderService readerService, ReaderValidator readerValidator) {
+    public ReaderController(ReaderService readerService, ReaderValidator readerValidator, ReaderValidator readerValidator1) {
         this.readerService = readerService;
+        this.readerValidator = readerValidator1;
     }
 
 
@@ -52,21 +48,38 @@ public class ReaderController {
     }
 
     @PostMapping()
-    public ResponseEntity<?> create(@RequestBody Reader reader) {
+    public ResponseEntity<?> create(@RequestBody ReaderDTO readerDTO,
+                                    BindingResult result) {
+        Reader reader = convertToReader(readerDTO);
+        readerValidator.validate(reader, result);
+        if (result.hasErrors()) {
+            return ResponseEntity.badRequest().body(new ResponseDto("Данный email уже занят другим читателем."));
+        }
         readerService.save(reader);
-        return ResponseEntity.ok("Пользователь успешно добавлен");
+        return ResponseEntity.ok(new ResponseDto("Пользователь успешно добавлен"));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<?> update(@RequestBody Reader updatedReader,
+    public ResponseEntity<?> update(@RequestBody ReaderDTO updatedReader,
+                         BindingResult result,
                          @PathVariable("id") int id) {
-        readerService.update(id, updatedReader);
-        return ResponseEntity.ok("Пользователь успешно изменён");
+        Reader reader = convertToReader(updatedReader);
+        reader.setId(id);
+        readerValidator.validate(reader, result);
+        if (result.hasErrors()) {
+            return ResponseEntity.badRequest().body(new ResponseDto("Данный email уже занят другим читателем."));
+        }
+        readerService.update(id, reader);
+        return ResponseEntity.ok(new ResponseDto("Пользователь успешно изменён"));
     }
 
     @DeleteMapping("/{id}")
     public HttpStatus delete(@PathVariable("id") int id) {
         readerService.delete(id);
         return HttpStatus.OK;
+    }
+
+    private Reader convertToReader(ReaderDTO readerDTO) {
+        return new Reader(readerDTO.getFullName(), readerDTO.getBirthYear(), readerDTO.getEmail());
     }
 }

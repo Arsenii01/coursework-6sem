@@ -2,8 +2,10 @@ package ru.musailov.library.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -36,15 +38,28 @@ public class SecurityConfig {
         this.logoutHandler = logoutHandler;
     }
 
+
+    private static final String[] SWAGGER_WHITELIST = {
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-resources/**",
+            "/swagger-resources"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
-                        req -> req.requestMatchers("/login/**", "/register/**")
+                        req -> req
+                                .requestMatchers(SWAGGER_WHITELIST).permitAll()
+                                .requestMatchers("/login/**", "/register")
                                 .permitAll()
-                                .requestMatchers("/books/**", "/readers/**").hasAuthority("ADMIN")
+                                .requestMatchers(HttpMethod.GET, "/books", "/books/search").authenticated()
+                                .requestMatchers("/registerAdmin").hasAuthority("SUPERADMIN")
+                                .requestMatchers("/books/**", "/readers/**").hasAnyAuthority("ADMIN", "SUPERADMIN")
+                                .requestMatchers("/users/**").hasAuthority("SUPERADMIN")
                                 .anyRequest()
                                 .authenticated()
                 ).userDetailsService(userDetailsServiceImp)

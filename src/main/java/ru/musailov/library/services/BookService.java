@@ -31,10 +31,10 @@ public class BookService {
         this.readerService = readerService;
     }
 
-    public List<Book> findAll(boolean sortByYear) {
+    public List<Book> findAll(boolean sortByName) {
         List<Book> books;
-        if (sortByYear) {
-             books = booksRepository.findAll(Sort.by("year"));
+        if (sortByName) {
+             books = booksRepository.findAll(Sort.by("name"));
         } else {
             books = booksRepository.findAll();
         }
@@ -48,9 +48,9 @@ public class BookService {
         return books;
     }
 
-    public List<Book> findWithPagination(int page, int booksPerPage, boolean sortByYear) {
-        if (sortByYear)
-            return booksRepository.findAll(PageRequest.of(page, booksPerPage, Sort.by("year"))).getContent();
+    public List<Book> findWithPagination(int page, int booksPerPage, boolean sortByName) {
+        if (sortByName)
+            return booksRepository.findAll(PageRequest.of(page, booksPerPage, Sort.by("name"))).getContent();
         else
             return booksRepository.findAll(PageRequest.of(page, booksPerPage)).getContent();
     }
@@ -70,10 +70,12 @@ public class BookService {
                 readerInfo.setId(owner.getId());
                 readerInfo.setName(owner.getFullName());
                 bookPageInfo.setOwner(readerInfo);
+            } else {
+                bookPageInfo.setReaders(convertToReaderInfo(readerService.findAll()));
+
             }
 
 
-            bookPageInfo.setReaders(convertToReaderInfo(readerService.findAll()));
             return bookPageInfo;
         } else {
             return null;
@@ -90,8 +92,11 @@ public class BookService {
     }
     @Transactional
     public void update(int id, Book bookToUpdate) {
-        bookToUpdate.setId(id);
-        booksRepository.save(bookToUpdate);
+        Book updatedBook = booksRepository.findById(id).get();
+        updatedBook.setName(bookToUpdate.getName());
+        updatedBook.setAuthor(bookToUpdate.getAuthor());
+        updatedBook.setYear(bookToUpdate.getYear());
+        booksRepository.save(updatedBook);
     }
     @Transactional
     public void release(int id) {
@@ -108,7 +113,7 @@ public class BookService {
     }
 
     public List<Book> findWithTitle(String title) {
-        return booksRepository.findByNameStartingWithIgnoreCase(title);
+        return booksRepository.findByNameContainingIgnoreCase(title);
     }
 
     private List<ReaderInfo> convertToReaderInfo(List<Reader> readers) {
@@ -118,6 +123,7 @@ public class BookService {
             ReaderInfo readerInfo = new ReaderInfo();
             readerInfo.setId(r.getId());
             readerInfo.setName(r.getFullName());
+            readerInfo.setEmail(r.getEmail());
             readerInfos.add(readerInfo);
         });
 

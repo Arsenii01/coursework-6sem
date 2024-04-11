@@ -27,9 +27,9 @@ public class ReaderValidator implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
         Reader person = (Reader) target;
-        Optional<Reader> foundPerson = readerRepository.findByFullName(person.getFullName());
+        Optional<Reader> foundPerson = readerRepository.findByEmail(person.getEmail());
         if (foundPerson.isPresent() && person.getId() != foundPerson.get().getId()) {
-            errors.rejectValue("fullName", "", "Человек с таким ФИО уже зарегистрирован");
+            errors.rejectValue("email", "", "Человек с таким email уже зарегистрирован");
         }
 
     }

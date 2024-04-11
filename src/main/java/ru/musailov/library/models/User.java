@@ -12,6 +12,7 @@ import java.util.List;
 @Entity
 @Table(name = "app_user")
 @Data
+@NoArgsConstructor
 public class User implements UserDetails {
 
     @Id
@@ -65,4 +66,10 @@ public class User implements UserDetails {
         return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
+    public User(String firstName, String lastName, String username, String password) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.username = username;
+        this.password = password;
+    }
 }
